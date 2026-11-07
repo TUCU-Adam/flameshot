@@ -456,6 +456,14 @@ if (APPLE)
 # Code signing settings - optional, set to empty string to skip signing
     set(CODE_SIGN_IDENTITY "" CACHE STRING "Code signing identity (leave empty to skip signing)")
     set(DMG_SIGN_IDENTITY "" CACHE STRING "DMG signing identity (leave empty to skip signing)")
+    # Optional entitlements plist for identity-based signing. A self-signed certificate has
+    # no Team ID, so the hardened runtime refuses to load the bundled Qt frameworks unless
+    # library validation is disabled. Use packaging/macos/local-sign.entitlements for that.
+    set(CODE_SIGN_ENTITLEMENTS "" CACHE FILEPATH "Entitlements plist for identity-based code signing (optional)")
+    set(CODE_SIGN_ENTITLEMENTS_ARGS "")
+    if(CODE_SIGN_ENTITLEMENTS)
+        set(CODE_SIGN_ENTITLEMENTS_ARGS --entitlements "${CODE_SIGN_ENTITLEMENTS}")
+    endif()
     # Custom target to create DMG (signed or unsigned)
     add_custom_target(create_dmg
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../packaging/macos/create_dmg.sh 
@@ -474,7 +482,7 @@ if (APPLE)
         # Identity-based signing (requires Developer ID)
         add_custom_command(TARGET flameshot POST_BUILD
             COMMAND codesign --force --deep --sign "${CODE_SIGN_IDENTITY}" 
-                    --options runtime --timestamp "$<TARGET_BUNDLE_DIR:flameshot>"
+                    --options runtime --timestamp ${CODE_SIGN_ENTITLEMENTS_ARGS} "$<TARGET_BUNDLE_DIR:flameshot>"
             COMMENT "Code signing app bundle with ${CODE_SIGN_IDENTITY}"
         )
     else()
@@ -497,7 +505,7 @@ if (APPLE)
        if(CODE_SIGN_IDENTITY AND NOT CODE_SIGN_IDENTITY STREQUAL "")
            add_custom_command(TARGET flameshot POST_BUILD
                COMMAND codesign --force --deep --sign "${CODE_SIGN_IDENTITY}" 
-                       --options runtime --timestamp "$<TARGET_BUNDLE_DIR:flameshot>"
+                       --options runtime --timestamp ${CODE_SIGN_ENTITLEMENTS_ARGS} "$<TARGET_BUNDLE_DIR:flameshot>"
                COMMENT "Re-signing app bundle after Qt deployment"
            )
        else()
