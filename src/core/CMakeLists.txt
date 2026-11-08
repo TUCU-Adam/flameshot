@@ -30,3 +30,11 @@ endif ()
 if (WIN32)
     target_sources(flameshot PRIVATE globalshortcutfilter.h globalshortcutfilter.cpp)
 endif ()
+
+if (APPLE)
+    target_sources(flameshot PRIVATE
+        macoscapturekeepalive.h
+        macoscapturekeepalive.mm
+    )
+    target_link_libraries(flameshot "-framework ScreenCaptureKit" "-framework Foundation")
+endif ()
